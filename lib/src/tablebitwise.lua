@@ -1,0 +1,48 @@
+-- bitwise operations on boolean tables
+
+
+local tablebitwise = {}
+local fill_tables
+
+
+tablebitwise.tand = function(t1, t2)
+  t1_filled, t2_filled = fill_tables(t1, t2)
+  
+  local result = {}
+  for i=1, #t1_filled do
+    result[i] = t1_filled[i] and t2_filled[i]
+  end
+  return result
+end
+
+
+tablebitwise.tor = function(t1, t2)
+  t1_filled, t2_filled = fill_tables(t1, t2)
+  
+  local result = {}
+  for i=1, #t1_filled do
+    result[i] = t1_filled[i] or t2_filled[i]
+  end
+  return result
+end
+
+
+fill_tables = function(t1, t2)
+  local t1_c = {table.unpack(t1)}
+  local t2_c = {table.unpack(t2)}
+  local len_diff = #t1_c - #t2_c
+  if len_diff > 0 then
+    for i=#t2_c + 1, #t1_c do
+      t2_c[i] = false
+    end
+  elseif len_diff < 0 then
+    for i=#t1_c + 1, #t2_c do
+      t1_c[i] = false
+    end
+  end
+
+  return t1_c, t2_c
+end
+
+
+return tablebitwise
