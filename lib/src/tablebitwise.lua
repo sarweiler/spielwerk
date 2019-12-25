@@ -27,6 +27,15 @@ tablebitwise.tor = function(t1, t2)
 end
 
 
+tablebitwise.to_int = function(t)
+  t_binary = {}
+  for i, val in ipairs(t) do
+    t_binary[i] = t[i] and 1 or 0
+  end
+  return tonumber(table.concat(t_binary, ""), 2)
+end
+
+
 fill_tables = function(t1, t2)
   local t1_c = {table.unpack(t1)}
   local t2_c = {table.unpack(t2)}

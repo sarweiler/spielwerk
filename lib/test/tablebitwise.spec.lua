@@ -78,3 +78,13 @@ describe("boolean table bitwise or", function()
     assert.are.same(expected_right, result_right)
   end)
 end)
+
+
+describe("boolean tables converter", function()
+  it("converts boolean tables to int", function()
+    local result = tbw.to_int({false, false, true, true, false})
+    local expected = 6
+
+    assert.is.equal(result, expected)
+  end)
+end)
