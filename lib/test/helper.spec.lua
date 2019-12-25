@@ -13,21 +13,28 @@ describe("helper", function()
     local result = helper.bpm_to_sec(120)
     local expected = 0.125
 
-    assert.is.equal(result, expected)
+    assert.is.equal(expected, result)
+  end)
+
+  it("should convert seconds (* 4) to bpm", function()
+    local result = helper.sec_to_bpm(0.125)
+    local expected = 120
+
+    assert.is.equal(expected, result)
   end)
 
   it("should shift a table left", function()
     local result = helper.tab.shift_left({1, 2, 3, 4})
     local expected = {2, 3, 4, 1}
 
-    assert.are.same(result, expected)
+    assert.are.same(expected, result)
   end)
 
   it("should shift a table right", function()
     local result = helper.tab.shift_right({1, 2, 3, 4})
     local expected = {4, 1, 2, 3}
 
-    assert.are.same(result, expected)
+    assert.are.same(expected, result)
   end)
 
   it("should clone a table", function()
