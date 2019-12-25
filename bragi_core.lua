@@ -5,7 +5,7 @@
 local CONFIG = {
   SEQ = {
     INITSTEPS = 20,
-    STEPCOUNT = 90
+    STEPCOUNT = -1
   }
 }
 
@@ -15,7 +15,7 @@ local state = {
       steps = CONFIG.SEQ.INITSTEPS,
       pulses = 20,
       sequence = {},
-      bpm = 95
+      bpm = 90
     },
     {
       steps = CONFIG.SEQ.INITSTEPS,
@@ -31,7 +31,7 @@ local state = {
     }
   }
 }
-      
+
 
 -- some helper functions
 
@@ -57,6 +57,10 @@ end
 
 helper.bpm_to_sec = function(bpm)
   return 60 / bpm / 4
+end
+
+helper.sec_to_bpm = function(sec)
+  return 60 / sec / 4
 end
 
 helper.tab.shift_left = function(t)
@@ -85,6 +89,33 @@ helper.tab.debug = function(tab)
 end
 
 
+-- accessor functions
+acc = {}
+
+acc.set_bpm = function(seq, bpm)
+  state.seqs[seq].metro.time = helper.bpm_to_sec(bpm)
+end
+
+acc.get_bpm = function(seq)
+  local bpm = helper.sec_to_bpm(state.seqs[seq].metro.time)
+  print(bpm)
+  return bpm
+end
+
+acc.set_steps = function(seq, steps)
+  steps = steps >= state.seqs[seq].pulses and steps or state.seqs[seq].pulses
+  state.seqs[seq].steps = steps
+  state.seqs[seq].sequence = helper.er_gen(state.seqs[seq].pulses, state.seqs[seq].steps)
+end
+
+acc.set_pulses = function(seq, num_pulses)
+  num_pulses = num_pulses <= state.seqs[seq].steps and num_pulses or state.seqs[seq].steps
+  state.seqs[seq].pulses = num_pulses
+  state.seqs[seq].sequence = helper.er_gen(state.seqs[seq].pulses, state.seqs[seq].steps)
+end
+
+
+-- metro callback
 step = function(c)
   if state.seqs[c].sequence[c] == true then
     output[c]()
