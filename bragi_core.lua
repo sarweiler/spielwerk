@@ -31,16 +31,6 @@ local state = {
     }
   }
 }
-
--- functions
-local bpm_to_sec,
-      bitwise,
-      debug_tab,
-      er_gen,
-      shift_seq,
-      step,
-      tab_clone,
-      tab_shift
       
 
 -- some helper functions
