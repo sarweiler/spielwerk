@@ -28,6 +28,10 @@ helper.sec_to_bpm = function(sec)
   return 60 / sec / 4
 end
 
+helper.note_to_volt = function(note)
+  return note / 12
+end
+
 helper.tab.shift_left = function(t)
   local t_clone = helper.tab.clone(t)
   table.insert(t_clone, #t_clone + 1, t_clone[1])

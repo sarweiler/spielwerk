@@ -23,6 +23,13 @@ describe("helper", function()
     assert.is.equal(expected, result)
   end)
 
+  it("converts note values to volts", function()
+    local result = helper.note_to_volt(57)
+    local expected = 4.75
+
+    assert.is.equal(expected, result)
+  end)
+
   it("should shift a table left", function()
     local result = helper.tab.shift_left({1, 2, 3, 4})
     local expected = {2, 3, 4, 1}
