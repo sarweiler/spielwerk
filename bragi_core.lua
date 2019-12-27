@@ -32,6 +32,8 @@ local state = {
   }
 }
 
+local step
+
 
 -- some helper functions
 
