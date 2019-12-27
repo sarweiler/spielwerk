@@ -1,6 +1,5 @@
 -- bitwise operations on boolean tables
 
-
 local tablebitwise = {}
 local fill_tables
 
