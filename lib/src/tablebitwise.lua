@@ -41,12 +41,12 @@ fill_tables = function(t1, t2)
   local t2_c = {table.unpack(t2)}
   local len_diff = #t1_c - #t2_c
   if len_diff > 0 then
-    for i=#t2_c + 1, #t1_c do
-      t2_c[i] = false
+    for i=1,math.abs(len_diff) do
+      table.insert(t2_c, 1, false)
     end
   elseif len_diff < 0 then
-    for i=#t1_c + 1, #t2_c do
-      t1_c[i] = false
+    for i=1,math.abs(len_diff) do
+      table.insert(t1_c, 1, false)
     end
   end
 

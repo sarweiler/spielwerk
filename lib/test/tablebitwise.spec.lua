@@ -17,7 +17,7 @@ describe("boolean table bitwise and", function()
     --given
     local t1_left = {true, true, true, true, false}
     local t2_left = {true, true, false}
-    local expected_left = {true, true, false, false, false}
+    local expected_left = {false, false, true, true, false}
 
     -- when
     local result_left = tbw.tand(t1_left, t2_left)
@@ -29,7 +29,7 @@ describe("boolean table bitwise and", function()
     -- given
     local t1_right = {true, true, true}
     local t2_right = {true, true, false, true, true, false}
-    local expected_right = {true, true, false, false, false, false}
+    local expected_right = {false, false, false, true, true, false}
 
     -- when
     local result_right = tbw.tand(t1_right, t2_right)
@@ -69,7 +69,7 @@ describe("boolean table bitwise or", function()
     -- given
     local t1_right = {true, true, true}
     local t2_right = {true, true, false, true, true, false}
-    local expected_right = {true, true, true, true, true, false}
+    local expected_right = {true, true, false, true, true, true}
 
     -- when
     local result_right = tbw.tor(t1_right, t2_right)
