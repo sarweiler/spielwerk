@@ -20,12 +20,36 @@ helper.er_gen = function(p, s)
   return r
 end
 
+helper.quantize = function(scale, note)
+  local note_round = math.floor(note) % 12
+  if note_round <= 0 then
+    return scale[1]
+  end
+
+  for i, scale_note in ipairs(scale) do
+    if note_round < scale_note then
+      return scale[i - 1]
+    elseif note_round == scale_note then
+      return scale_note
+    end
+  end
+end
+
+helper.preprocess_scales = function(scales)
+  local scales_proc = {}
+  for _, scale in pairs(scales) do
+    scales_proc[scale.name:lower()] = scale.intervals
+  end
+
+  return scales_proc
+end
+
 helper.bpm_to_sec = function(bpm)
-  return 60 / bpm / 4
+  return 60 / bpm
 end
 
 helper.sec_to_bpm = function(sec)
-  return 60 / sec / 4
+  return 60 / sec
 end
 
 helper.note_to_volt = function(note)
