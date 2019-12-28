@@ -219,7 +219,7 @@ acc.set_pulses = function(seq, num_pulses)
 end
 
 acc.set_cv_bpm = function(bpm)
-  state.seqs[seq].metro.time = helper.bpm_to_sec(bpm)
+  state.cv.metro.time = helper.bpm_to_sec(bpm)
 end
 
 acc.set_scale = function(scale_name)
