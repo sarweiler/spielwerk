@@ -125,13 +125,6 @@ helper.tab.shift_left = function(t)
   return t_clone
 end
 
-helper.tab.shift_right = function(t)
-  local t_clone = helper.tab.clone(t)
-  table.insert(t_clone, 1, t_clone[#t_clone])
-  table.remove(t_clone, #t_clone)
-  return t_clone
-end
-
 helper.tab.clone = function(t)
   return {table.unpack(t)}
 end
@@ -213,23 +206,6 @@ acc.get_bpm = function(seq)
   return bpm
 end
 
-acc.set_bpm_all = function(bpm)
-  for i, _ in ipairs(state.seqs) do
-    acc.set_bpm(i, bpm)
-  end
-end
-
-acc.delta_bpm = function(seq, delta)
-  local current_bpm = state.seqs[seq].metro.time
-  state.seqs[seq].metro.time = math.max(current_bpm - delta, 1)
-end
-
-acc.delta_bpm_all = function(delta)
-  for i, _ in ipairs(state.seqs) do
-    acc.delta_bpm(i, delta)
-  end
-end
-
 acc.set_steps = function(seq, steps)
   steps = steps >= state.seqs[seq].pulses and steps or state.seqs[seq].pulses
   state.seqs[seq].steps = steps
@@ -275,7 +251,6 @@ step_cv = function()
     (state.cv.octave * 12) + (octave_range * 12) + note_quantized
   )
   output[4].volts = cv
-  print("CV: " .. cv)
 end
 
 
