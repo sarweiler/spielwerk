@@ -206,6 +206,12 @@ acc.get_bpm = function(seq)
   return bpm
 end
 
+acc.set_bpm_all = function(bpm)
+  for i, _ in ipairs(state.seqs) do
+    acc.set_bpm(i, bpm)
+  end
+end
+
 acc.set_steps = function(seq, steps)
   steps = steps >= state.seqs[seq].pulses and steps or state.seqs[seq].pulses
   state.seqs[seq].steps = steps
@@ -226,6 +232,25 @@ acc.set_scale = function(scale_name)
   state.cv.scale = scale_name:lower()
 end
 
+acc.set_octave = function(octave)
+  state.cv.octave = octave
+end
+
+acc.set_octave_range = function(octave_range)
+  state.cv.octave_range = octave_range
+end
+
+acc.delta_bpm = function(seq, d)
+  local current_bpm = helper.sec_to_bpm(state.seqs[seq].metro.time)
+  local new_bpm = current_bpm + d
+  state.seqs[seq].metro.time = helper.bpm_to_sec(math.max(new_bpm, 1))
+end
+
+acc.delta_bpm_all = function(d)
+  for i, _ in ipairs(state.seqs) do
+    acc.delta_bpm(i, d)
+  end
+end
 
 -- metro callbacks
 
