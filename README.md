@@ -1,3 +1,3 @@
-# bragi
+# spielwerk
 
-[Bragi](https://en.wikipedia.org/wiki/Bragi) is the skaldic god of poetry in Norse mythology.
+spielwerk is a sequencer providing three independent euclidean rhythms and a CV, generated from these rhythms.
