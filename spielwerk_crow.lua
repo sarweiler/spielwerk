@@ -1,4 +1,4 @@
--- bragi core
+-- spielwerk
 -- 3 euclidean rhythms, 1 cv sequence
 
 
