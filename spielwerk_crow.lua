@@ -60,14 +60,14 @@ local step,
       step_cv
 
 
--- some helper functions
+-- some helpers functions
 
-local helper = {}
-helper.tab = {}
+local helpers = {}
+helpers.tab = {}
 
 
 -- stolen from https://github.com/monome/norns/blob/master/lua/lib/er.lua
-helper.er_gen = function(p, s)
+helpers.er_gen = function(p, s)
   -- results array, intially all zero
   local r = {}
   for i=1,s do r[i] = false end
@@ -82,7 +82,7 @@ helper.er_gen = function(p, s)
   return r
 end
 
-helper.quantize = function(scale, note)
+helpers.quantize = function(scale, note)
   local note_round = math.floor(note) % 12
   if note_round <= 0 then
     return scale[1]
@@ -97,7 +97,7 @@ helper.quantize = function(scale, note)
   end
 end
 
-helper.preprocess_scales = function(scales)
+helpers.preprocess_scales = function(scales)
   local scales_proc = {}
   for _, scale in pairs(scales) do
     scales_proc[scale.name:lower()] = scale.intervals
@@ -106,30 +106,30 @@ helper.preprocess_scales = function(scales)
   return scales_proc
 end
 
-helper.bpm_to_sec = function(bpm)
+helpers.bpm_to_sec = function(bpm)
   return 60 / bpm
 end
 
-helper.sec_to_bpm = function(sec)
+helpers.sec_to_bpm = function(sec)
   return 60 / sec
 end
 
-helper.note_to_volt = function(note)
+helpers.note_to_volt = function(note)
   return note / 12
 end
 
-helper.tab.shift_left = function(t)
-  local t_clone = helper.tab.clone(t)
+helpers.tab.shift_left = function(t)
+  local t_clone = helpers.tab.clone(t)
   table.insert(t_clone, #t_clone + 1, t_clone[1])
   table.remove(t_clone, 1)
   return t_clone
 end
 
-helper.tab.clone = function(t)
+helpers.tab.clone = function(t)
   return {table.unpack(t)}
 end
 
-helper.tab.debug = function(tab)
+helpers.tab.debug = function(tab)
   print("---")
   for k,v in ipairs(tab) do
     print(k .. ": " .. tostring(v))
@@ -197,11 +197,11 @@ end
 acc = {}
 
 acc.set_bpm = function(seq, bpm)
-  state.seqs[seq].metro.time = helper.bpm_to_sec(bpm)
+  state.seqs[seq].metro.time = helpers.bpm_to_sec(bpm)
 end
 
 acc.get_bpm = function(seq)
-  local bpm = helper.sec_to_bpm(state.seqs[seq].metro.time)
+  local bpm = helpers.sec_to_bpm(state.seqs[seq].metro.time)
   print(bpm)
   return bpm
 end
@@ -215,17 +215,17 @@ end
 acc.set_steps = function(seq, steps)
   steps = steps >= state.seqs[seq].pulses and steps or state.seqs[seq].pulses
   state.seqs[seq].steps = steps
-  state.seqs[seq].sequence = helper.er_gen(state.seqs[seq].pulses, state.seqs[seq].steps)
+  state.seqs[seq].sequence = helpers.er_gen(state.seqs[seq].pulses, state.seqs[seq].steps)
 end
 
 acc.set_pulses = function(seq, num_pulses)
   num_pulses = num_pulses <= state.seqs[seq].steps and num_pulses or state.seqs[seq].steps
   state.seqs[seq].pulses = num_pulses
-  state.seqs[seq].sequence = helper.er_gen(state.seqs[seq].pulses, state.seqs[seq].steps)
+  state.seqs[seq].sequence = helpers.er_gen(state.seqs[seq].pulses, state.seqs[seq].steps)
 end
 
 acc.set_cv_bpm = function(bpm)
-  state.cv.metro.time = helper.bpm_to_sec(bpm)
+  state.cv.metro.time = helpers.bpm_to_sec(bpm)
 end
 
 acc.set_scale = function(scale_name)
@@ -241,9 +241,9 @@ acc.set_octave_range = function(octave_range)
 end
 
 acc.delta_bpm = function(seq, d)
-  local current_bpm = helper.sec_to_bpm(state.seqs[seq].metro.time)
+  local current_bpm = helpers.sec_to_bpm(state.seqs[seq].metro.time)
   local new_bpm = current_bpm + d
-  state.seqs[seq].metro.time = helper.bpm_to_sec(math.max(new_bpm, 1))
+  state.seqs[seq].metro.time = helpers.bpm_to_sec(math.max(new_bpm, 1))
 end
 
 acc.delta_bpm_all = function(d)
@@ -258,7 +258,7 @@ step = function(c)
   if state.seqs[c].sequence[c] == true then
     output[c]()
   end
-  state.seqs[c].sequence = helper.tab.shift_left(state.seqs[c].sequence)
+  state.seqs[c].sequence = helpers.tab.shift_left(state.seqs[c].sequence)
 end
 
 step_cv = function()
@@ -270,9 +270,9 @@ step_cv = function()
     state.seqs[3].sequence
   )
   local bit_note_value = math.floor(tablebitwise.to_int(cv_seq) / 10000)
-  local note_quantized = helper.quantize(CONFIG.SCALES[state.cv.scale], bit_note_value)
+  local note_quantized = helpers.quantize(CONFIG.SCALES[state.cv.scale], bit_note_value)
   local octave_range = math.random(state.cv.octave_range)
-  local cv = helper.note_to_volt(
+  local cv = helpers.note_to_volt(
     (state.cv.octave * 12) + (octave_range * 12) + note_quantized
   )
   output[4].volts = cv
@@ -282,21 +282,21 @@ end
 -- init
 
 function init()
-  CONFIG.SCALES = helper.preprocess_scales(CONFIG.SCALES_MUSICUTIL)
+  CONFIG.SCALES = helpers.preprocess_scales(CONFIG.SCALES_MUSICUTIL)
 
   for i=1,#state.seqs do
     output[i].action = { to(5,0), to(0, 0.25) }
-    state.seqs[i].sequence = helper.er_gen(state.seqs[i].pulses, state.seqs[i].steps)
+    state.seqs[i].sequence = helpers.er_gen(state.seqs[i].pulses, state.seqs[i].steps)
     state.seqs[i].metro = metro.init{
       event = function() step(i) end,
-      time = helper.bpm_to_sec(state.seqs[i].bpm),
+      time = helpers.bpm_to_sec(state.seqs[i].bpm),
       count = CONFIG.SEQ.STEPCOUNT
     }
   end
 
   state.cv.metro = metro.init{
     event = step_cv,
-    time = helper.bpm_to_sec(state.cv.bpm),
+    time = helpers.bpm_to_sec(state.cv.bpm),
     count = CONFIG.CV.STEPCOUNT
   }
 

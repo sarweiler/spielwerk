@@ -1,11 +1,11 @@
--- some helper functions
+-- some helpers functions
 
-local helper = {}
-helper.tab = {}
+local helpers = {}
+helpers.tab = {}
 
 
 -- stolen from https://github.com/monome/norns/blob/master/lua/lib/er.lua
-helper.er_gen = function(p, s)
+helpers.er_gen = function(p, s)
   -- results array, intially all zero
   local r = {}
   for i=1,s do r[i] = false end
@@ -20,7 +20,7 @@ helper.er_gen = function(p, s)
   return r
 end
 
-helper.quantize = function(scale, note)
+helpers.quantize = function(scale, note)
   local note_round = math.floor(note) % 12
   if note_round <= 0 then
     return scale[1]
@@ -35,7 +35,7 @@ helper.quantize = function(scale, note)
   end
 end
 
-helper.preprocess_scales = function(scales)
+helpers.preprocess_scales = function(scales)
   local scales_proc = {}
   for _, scale in pairs(scales) do
     scales_proc[scale.name:lower()] = scale.intervals
@@ -44,37 +44,37 @@ helper.preprocess_scales = function(scales)
   return scales_proc
 end
 
-helper.bpm_to_sec = function(bpm)
+helpers.bpm_to_sec = function(bpm)
   return 60 / bpm
 end
 
-helper.sec_to_bpm = function(sec)
+helpers.sec_to_bpm = function(sec)
   return 60 / sec
 end
 
-helper.note_to_volt = function(note)
+helpers.note_to_volt = function(note)
   return note / 12
 end
 
-helper.tab.shift_left = function(t)
-  local t_clone = helper.tab.clone(t)
+helpers.tab.shift_left = function(t)
+  local t_clone = helpers.tab.clone(t)
   table.insert(t_clone, #t_clone + 1, t_clone[1])
   table.remove(t_clone, 1)
   return t_clone
 end
 
-helper.tab.shift_right = function(t)
-  local t_clone = helper.tab.clone(t)
+helpers.tab.shift_right = function(t)
+  local t_clone = helpers.tab.clone(t)
   table.insert(t_clone, 1, t_clone[#t_clone])
   table.remove(t_clone, #t_clone)
   return t_clone
 end
 
-helper.tab.clone = function(t)
+helpers.tab.clone = function(t)
   return {table.unpack(t)}
 end
 
-helper.tab.debug = function(tab)
+helpers.tab.debug = function(tab)
   print("---")
   for k,v in ipairs(tab) do
     print(k .. ": " .. tostring(v))
@@ -82,4 +82,4 @@ helper.tab.debug = function(tab)
 end
 
 
-return helper
+return helpers
