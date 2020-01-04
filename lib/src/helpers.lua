@@ -45,11 +45,11 @@ helpers.preprocess_scales = function(scales)
 end
 
 helpers.bpm_to_sec = function(bpm)
-  return 60 / bpm
+  return 60 / bpm / 4
 end
 
 helpers.sec_to_bpm = function(sec)
-  return 60 / sec
+  return 60 / sec / 4
 end
 
 helpers.note_to_volt = function(note)

@@ -11,13 +11,13 @@ describe("helpers", function()
 
   it("should convert bpm to seconds", function()
     local result = helpers.bpm_to_sec(120)
-    local expected = 0.5
+    local expected = 0.125
 
     assert.is.equal(expected, result)
   end)
 
   it("should convert seconds to bpm", function()
-    local result = helpers.sec_to_bpm(0.5)
+    local result = helpers.sec_to_bpm(0.125)
     local expected = 120
 
     assert.is.equal(expected, result)
