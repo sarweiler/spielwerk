@@ -54,6 +54,8 @@ local state = {
       steps = CONFIG.SEQ.INITSTEPS,
       pulses = CONFIG.SEQ.INITPULSES,
       sequence = {},
+      sequence_shifted = {},
+      active = 1,
       bpm = CONFIG.SEQ.INITBPM,
       metro = {}
     },
@@ -61,6 +63,8 @@ local state = {
       steps = CONFIG.SEQ.INITSTEPS,
       pulses = CONFIG.SEQ.INITPULSES,
       sequence = {},
+      sequence_shifted = {},
+      active = 1,
       bpm = CONFIG.SEQ.INITBPM,
       metro = {}
     },
@@ -68,6 +72,8 @@ local state = {
       steps = CONFIG.SEQ.INITSTEPS,
       pulses = CONFIG.SEQ.INITPULSES,
       sequence = {},
+      sequence_shifted = {},
+      active = 1,
       bpm = CONFIG.SEQ.INITBPM,
       metro = {}
     }
@@ -242,17 +248,34 @@ end
 
 function redraw()
   screen.clear()
-  for i, item in ipairs(menu.items) do
-    screen.move(0, i * 8)
-    if menu.active == i then
-      screen.level(15)
-    else
-      screen.level(7)
+  local line_height = 16
+
+  for i, seq in ipairs(state.seqs) do
+    screen.move(128, i * line_height - 8)
+    screen.level(menu.active == i and 15 or 4)
+    local id_bpm = "seq" .. i .. "_bpm"
+    local id_pulses = "seq" .. i .. "_pulses"
+    local id_steps = "seq" .. i .. "_steps"
+    screen.font_size(8)
+    screen.text_right("s" .. i .. " | " .. "bpm: " .. params:get(id_bpm) .. " | p: " .. params:get(id_pulses) .. " | s: " .. params:get(id_steps))
+    for j, step in ipairs(seq.sequence) do
+      if(step == true) then
+        screen.level(10)
+      else
+        screen.level(4)
+      end
+
+      if j == seq.active then
+        screen.level(15)
+      end
+      screen.rect(128 - (#seq.sequence * 2) + (j * 2), (i * line_height) - 4, 2, 4)
+      screen.fill()
     end
-    screen.text(item.name)
-    screen.move(128, i * 8)
-    screen.text_right(item.value)
   end
+
+  screen.level(menu.active == 4 and 15 or 4)
+  screen.move(128, (#state.seqs + 1) * line_height - 4)
+  screen.text_right("cv bpm: " .. params:get("cv_bpm"))
   
   screen.update()
 end
@@ -260,19 +283,22 @@ end
 
 -- metro callbacks
 step = function(c)
-  if state.seqs[c].sequence[c] == true then
+  local active_step = state.seqs[c].active
+  if state.seqs[c].sequence[active_step] == true then
     cr:fire_trigger(c)
   end
-  state.seqs[c].sequence = helpers.tab.shift_left(state.seqs[c].sequence)
+  state.seqs[c].active = (state.seqs[c].active < state.seqs[c].steps) and state.seqs[c].active + 1 or 1
+  state.seqs[c].sequence_shifted = helpers.tab.shift_left(state.seqs[c].sequence)
+  update_ui()
 end
 
 step_cv = function()
   local cv_seq_and = tbw.tand(
     tbw.tand(
-      state.seqs[1].sequence,
-      state.seqs[2].sequence
+      state.seqs[1].sequence_shifted,
+      state.seqs[2].sequence_shifted
     ),
-    state.seqs[3].sequence
+    state.seqs[3].sequence_shifted
   )
   local cv_and = calc_cv_value(cv_seq_and)
   cr:set_cv(4, cv_and)
@@ -283,30 +309,30 @@ step_cv = function()
     elseif params:get("jf_note_mode") == 2 then
       local cv_seq_or_and = tbw.tand(
         tbw.tor(
-          state.seqs[1].sequence,
-          state.seqs[2].sequence
+          state.seqs[1].sequence_shifted,
+          state.seqs[2].sequence_shifted
         ),
-        state.seqs[3].sequence
+        state.seqs[3].sequence_shifted
       )
       local cv_or_and = calc_cv_value(cv_seq_or_and)
       crow.ii.jf.play_note(cv_or_and + CONFIG.JF.OCTAVE_OFFSET, 4.0)
       elseif params:get("jf_note_mode") == 3 then
         local cv_seq_and_or = tbw.tor(
           tbw.tand(
-            state.seqs[1].sequence,
-            state.seqs[2].sequence
+            state.seqs[1].sequence_shifted,
+            state.seqs[2].sequence_shifted
           ),
-          state.seqs[3].sequence
+          state.seqs[3].sequence_shifted
         )
         local cv_and_or = calc_cv_value(cv_seq_and_or)
         crow.ii.jf.play_note(cv_and_or + CONFIG.JF.OCTAVE_OFFSET, 4.0)
     elseif params:get("jf_note_mode") == 4 then
       local cv_seq_or_or = tbw.tor(
         tbw.tor(
-          state.seqs[1].sequence,
-          state.seqs[2].sequence
+          state.seqs[1].sequence_shifted,
+          state.seqs[2].sequence_shifted
         ),
-        state.seqs[3].sequence
+        state.seqs[3].sequence_shifted
       )
       local cv_or_or = calc_cv_value(cv_seq_or_or)
       crow.ii.jf.play_note(cv_or_or + CONFIG.JF.OCTAVE_OFFSET, 4.0)
