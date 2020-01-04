@@ -8,6 +8,7 @@
 -- hold KEY 1 + ENC 1: set bpm
 
 local er = require("er")
+local mu = require("musicutil")
 local menu_items = include("lib/src/norns/menu_items")
 local par = include("lib/src/norns/parameters")
 local cs = include("lib/src/crowservice")
@@ -16,12 +17,15 @@ local tbw = include("lib/src/tablebitwise")
 
 engine.name = "PolyPerc"
 
-local cr, step, step_cv, update_state, update_ui
+local calc_cv_value, cr, step, step_cv, update_state, update_ui
 
 local CONFIG = {
   CV = {
     INITBPM = 45,
     STEPCOUNT = -1
+  },
+  JF = {
+    OCTAVE_OFFSET = -3
   },
   SEQ = {
     INITBPM = 90,
@@ -43,9 +47,7 @@ local state = {
   cv = {
     bpm = CONFIG.CV.INITBPM,
     metro = {},
-    scale = "major",
-    octave = 1,
-    octave_range = 2
+    scale = "major"
   },
   seqs = {
     {
@@ -143,6 +145,15 @@ local callbacks = {
     params:set(id, new_value)
     update_state()
   end,
+  set_jf_output = function(v)
+    if v==1 then
+      crow.ii.pullup(true)
+      crow.ii.jf.mode(1)
+    else
+      crow.ii.pullup(false)
+      crow.ii.jf.mode(0)
+    end
+  end,
   set_cutoff = function()
     engine.cutoff(params:get("cutoff"))
     update_state()
@@ -195,8 +206,33 @@ function key(n, pressed)
   else
     state.norns.keys["key" .. n .. "_down"] = false
   end
+
+  if state.norns.keys.key1_down and state.norns.keys.key2_down then
+    for i, seq in ipairs(state.seqs) do
+      seq.metro:stop()
+    end
+    state.cv.metro:stop()
+  end
+
+  if state.norns.keys.key1_down and state.norns.keys.key3_down then
+    for i, seq in ipairs(state.seqs) do
+      seq.metro:start()
+    end
+    state.cv.metro:start()
+  end
 end
 
+
+calc_cv_value = function(cv_seq)
+  local bit_note_value = math.floor(tbw.to_int(cv_seq) / 10000)
+  local note_quantized = helpers.quantize(CONFIG.SCALES[state.cv.scale], bit_note_value)
+  local octave_range = math.random(params:get("octave_range"))
+  local cv = helpers.note_to_volt(
+    (params:get("octave") * 12) + (octave_range * 12) + note_quantized
+  )
+
+  return cv
+end
 
 -- display UI
 update_ui = function()
@@ -231,20 +267,51 @@ step = function(c)
 end
 
 step_cv = function()
-  local cv_seq = tbw.tand(
+  local cv_seq_and = tbw.tand(
     tbw.tand(
       state.seqs[1].sequence,
       state.seqs[2].sequence
     ),
     state.seqs[3].sequence
   )
-  local bit_note_value = math.floor(tbw.to_int(cv_seq) / 10000)
-  local note_quantized = helpers.quantize(CONFIG.SCALES[state.cv.scale], bit_note_value)
-  local octave_range = math.random(state.cv.octave_range)
-  local cv = helpers.note_to_volt(
-    (state.cv.octave * 12) + (octave_range * 12) + note_quantized
-  )
-  cr:set_cv(4, cv)
+  local cv_and = calc_cv_value(cv_seq_and)
+  cr:set_cv(4, cv_and)
+
+  if params:get("jf_output") == 1 then
+    if params:get("jf_note_mode") == 1 then
+      crow.ii.jf.play_note(cv_and + CONFIG.JF.OCTAVE_OFFSET, 4.0)
+    elseif params:get("jf_note_mode") == 2 then
+      local cv_seq_or_and = tbw.tand(
+        tbw.tor(
+          state.seqs[1].sequence,
+          state.seqs[2].sequence
+        ),
+        state.seqs[3].sequence
+      )
+      local cv_or_and = calc_cv_value(cv_seq_or_and)
+      crow.ii.jf.play_note(cv_or_and + CONFIG.JF.OCTAVE_OFFSET, 4.0)
+      elseif params:get("jf_note_mode") == 3 then
+        local cv_seq_and_or = tbw.tor(
+          tbw.tand(
+            state.seqs[1].sequence,
+            state.seqs[2].sequence
+          ),
+          state.seqs[3].sequence
+        )
+        local cv_and_or = calc_cv_value(cv_seq_and_or)
+        crow.ii.jf.play_note(cv_and_or + CONFIG.JF.OCTAVE_OFFSET, 4.0)
+    elseif params:get("jf_note_mode") == 4 then
+      local cv_seq_or_or = tbw.tor(
+        tbw.tor(
+          state.seqs[1].sequence,
+          state.seqs[2].sequence
+        ),
+        state.seqs[3].sequence
+      )
+      local cv_or_or = calc_cv_value(cv_seq_or_or)
+      crow.ii.jf.play_note(cv_or_or + CONFIG.JF.OCTAVE_OFFSET, 4.0)
+    end
+  end
 end
 
 

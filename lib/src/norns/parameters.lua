@@ -46,6 +46,35 @@ local parameters = {
       controlspec=cs_co,
       action=param_callbacks.set_cutoff
     }
+
+    local cs_octave = controlspec.new(1, 5, "lin", 1, 2, "")
+    params:add{
+      type="control",
+      id="octave",
+      controlspec=cs_octave
+    }
+
+    local cs_octave_range = controlspec.new(1, 5, "lin", 1, 1, "")
+    params:add{
+      type="control",
+      id="octave_range",
+      controlspec=cs_octave_range
+    }
+
+    params:add_option(
+      "jf_output",
+      "jf output",
+      {"y", "n"},
+      2
+    )
+    params:set_action("jf_output", function(v) param_callbacks.set_jf_output(v) end)
+
+    params:add_option(
+      "jf_note_mode",
+      "jf note mode",
+      {"and/and", "or/and", "and/or", "or/or"},
+      2
+    )
   end
 }
 
