@@ -10,10 +10,13 @@
 local er = require("er")
 local menu_items = include("lib/src/norns/menu_items")
 local par = include("lib/src/norns/parameters")
+local cs = include("lib/src/crowservice")
+local helpers = include("lib/src/helpers")
+local tbw = include("lib/src/tablebitwise")
 
 engine.name = "PolyPerc"
 
-local update_ui
+local cr, step, step_cv, update_ui
 
 local CONFIG = {
   CV = {
@@ -134,8 +137,64 @@ function redraw()
 end
 
 
+-- metro callbacks
+step = function(c)
+  if state.seqs[c].sequence[c] == true then
+    cr:fire_trigger(c)
+  end
+  state.seqs[c].sequence = helpers.tab.shift_left(state.seqs[c].sequence)
+end
+
+step_cv = function()
+  local cv_seq = tbw.tand(
+    tbw.tand(
+      state.seqs[1].sequence,
+      state.seqs[2].sequence
+    ),
+    state.seqs[3].sequence
+  )
+  local bit_note_value = math.floor(tbw.to_int(cv_seq) / 10000)
+  local note_quantized = helpers.quantize(CONFIG.SCALES[state.cv.scale], bit_note_value)
+  local octave_range = math.random(state.cv.octave_range)
+  local cv = helpers.note_to_volt(
+    (state.cv.octave * 12) + (octave_range * 12) + note_quantized
+  )
+  cr:set_cv(4, cv)
+end
+
+
 -- init
 function init()
+  -- crow init
+  cr = cs:new(crow)
+  cr:set_trigger_output(1)
+  cr:set_trigger_output(2)
+  cr:set_trigger_output(3)
+
+  CONFIG.SCALES = helpers.preprocess_scales(CONFIG.SCALES_MUSICUTIL)
+
+  for i, seq_state in ipairs(state.seqs) do
+    cr:set_trigger_output(i)
+    seq_state.sequence = helpers.er_gen(state.seqs[i].pulses, state.seqs[i].steps)
+    seq_state.metro = metro.init{
+      event = function() step(i) end,
+      time = helpers.bpm_to_sec(state.seqs[i].bpm),
+      count = CONFIG.SEQ.STEPCOUNT
+    }
+  end
+
+  state.cv.metro = metro.init{
+    event = step_cv,
+    time = helpers.bpm_to_sec(state.cv.bpm),
+    count = CONFIG.CV.STEPCOUNT
+  }
+
+  for i=1,#state.seqs do
+    state.seqs[i].metro:start()
+  end
+
+  state.cv.metro:start()
+
   menu.active = 1
   par.add_params(par.callbacks, state)
   update_ui()
