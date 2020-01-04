@@ -288,7 +288,7 @@ step = function(c)
     cr:fire_trigger(c)
   end
   state.seqs[c].active = (state.seqs[c].active < state.seqs[c].steps) and state.seqs[c].active + 1 or 1
-  state.seqs[c].sequence_shifted = helpers.tab.shift_left(state.seqs[c].sequence)
+  state.seqs[c].sequence_shifted = helpers.tab.shift_left(state.seqs[c].sequence_shifted)
   update_ui()
 end
 
@@ -351,6 +351,7 @@ function init()
   for i, seq_state in ipairs(state.seqs) do
     cr:set_trigger_output(i)
     seq_state.sequence = er.gen(state.seqs[i].pulses, state.seqs[i].steps)
+    seq_state.sequence_shifted = seq_state.sequence
     seq_state.metro = metro.init{
       event = function() step(i) end,
       time = helpers.bpm_to_sec(state.seqs[i].bpm),
