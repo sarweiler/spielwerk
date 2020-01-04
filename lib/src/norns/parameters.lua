@@ -1,44 +1,4 @@
 local parameters = {
-  callbacks = {
-    set_cv_bpm = function(new_value, state)
-      params:set("cv_bpm", new_value)
-    end,
-    set_cv_bpm_delta = function(delta, state)
-      local current_value = params:get("cv_bpm")
-      params:set("cv_bpm", current_value + delta)
-    end,
-    set_seq_bpm = function(i, new_value, state)
-      local id = "seq" .. i .. "_bpm"
-      params:set(id, new_value)
-    end,
-    set_seq_bpm_delta = function(i, delta, state)
-      local id = "seq" .. i .. "_bpm"
-      local current_value = params:get(id)
-      params:set(id, current_value + delta)
-    end,
-    set_seq_pulses = function(i, new_value, state)
-      local id = "seq" .. i .. "_pulses"
-      params:set(id, new_value)
-    end,
-    set_seq_pulses_delta = function(i, delta, state)
-      local id = "seq" .. i .. "_pulses"
-      local current_value = params:get(id)
-      params:set(id, current_value + delta)
-    end,
-    set_seq_steps = function(i, new_value, state)
-      local id = "seq" .. i .. "_steps"
-      params:set(id, new_value)
-    end,
-    set_seq_steps_delta = function(i, delta, state)
-      local id = "seq" .. i .. "_steps"
-      local current_value = params:get(id)
-      params:set(id, current_value + delta)
-    end,
-    set_cutoff = function()
-      engine.cutoff(params:get("cutoff"))
-    end
-  },
-
   add_params = function(param_callbacks, state)
     local cs_bpm_cv = controlspec.new(1, 300, 'lin', 1, state.cv.bpm, 'bpm')
     params:add{

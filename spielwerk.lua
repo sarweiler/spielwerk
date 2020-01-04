@@ -16,7 +16,7 @@ local tbw = include("lib/src/tablebitwise")
 
 engine.name = "PolyPerc"
 
-local cr, step, step_cv, update_ui
+local cr, step, step_cv, update_state, update_ui
 
 local CONFIG = {
   CV = {
@@ -50,7 +50,7 @@ local state = {
   seqs = {
     {
       steps = CONFIG.SEQ.INITSTEPS,
-      pulses = CONFIG.SEQ.INITPULSES + 2,
+      pulses = CONFIG.SEQ.INITPULSES,
       sequence = {},
       bpm = CONFIG.SEQ.INITBPM,
       metro = {}
@@ -64,7 +64,7 @@ local state = {
     },
     {
       steps = CONFIG.SEQ.INITSTEPS,
-      pulses = CONFIG.SEQ.INITPULSES - 2,
+      pulses = CONFIG.SEQ.INITPULSES,
       sequence = {},
       bpm = CONFIG.SEQ.INITBPM,
       metro = {}
@@ -79,25 +79,110 @@ local state = {
   }
 }
 
-
 local menu = {}
+
+local callbacks = {
+  set_cv_bpm = function(new_value)
+    params:set("cv_bpm", new_value)
+    update_state()
+  end,
+  set_cv_bpm_delta = function(delta)
+    local current_value = params:get("cv_bpm")
+    params:set("cv_bpm", current_value + delta)
+    update_state()
+  end,
+  set_seq_bpm = function(i, new_value)
+    local id = "seq" .. i .. "_bpm"
+    params:set(id, new_value)
+    update_state()
+  end,
+  set_seq_bpm_delta = function(i, delta)
+    local id = "seq" .. i .. "_bpm"
+    local current_value = params:get(id)
+    local new_value = current_value + delta
+    params:set(id, new_value)
+    update_state()
+  end,
+  set_seq_pulses = function(i, new_value)
+    local id = "seq" .. i .. "_pulses"
+    local steps = params:get("seq" .. i .. "_steps")
+    if new_value > steps then
+      new_value = steps
+    end
+    params:set(id, new_value)
+    update_state()
+  end,
+  set_seq_pulses_delta = function(i, delta)
+    local id = "seq" .. i .. "_pulses"
+    local current_value = params:get(id)
+    local new_value = current_value + delta
+    local steps = params:get("seq" .. i .. "_steps")
+    if new_value > steps then
+      new_value = steps
+    end
+    params:set(id, new_value)
+    update_state()
+  end,
+  set_seq_steps = function(i, new_value)
+    local id = "seq" .. i .. "_steps"
+    local pulses = params:get("seq" .. i .. "_pulses")
+    if new_value < pulses then
+      new_value = pulses
+    end
+    params:set(id, new_value)
+    update_state()
+  end,
+  set_seq_steps_delta = function(i, delta)
+    local id = "seq" .. i .. "_steps"
+    local current_value = params:get(id)
+    local new_value = current_value + delta
+    local pulses = params:get("seq" .. i .. "_pulses")
+    if new_value < pulses then
+      new_value = pulses
+    end
+    params:set(id, new_value)
+    update_state()
+  end,
+  set_cutoff = function()
+    engine.cutoff(params:get("cutoff"))
+    update_state()
+  end
+}
+
+-- state
+update_state = function()
+  for i, seq_state in ipairs(state.seqs) do
+    local id_bpm = "seq" .. i .. "_bpm"
+    local id_pulses = "seq" .. i .. "_pulses"
+    local id_steps = "seq" .. i .. "_steps"
+    state.seqs[i].metro.time = helpers.bpm_to_sec(params:get(id_bpm))
+    state.seqs[i].bpm = params:get(id_bpm)
+    state.seqs[i].pulses = params:get(id_pulses)
+    state.seqs[i].steps = params:get(id_steps)
+    state.seqs[i].sequence = er.gen(state.seqs[i].pulses, state.seqs[i].steps)
+  end
+
+  state.cv.bpm = params:get("cv_bpm")
+  state.cv.metro.time = helpers.bpm_to_sec(params:get("cv_bpm"))
+end
+
 
 -- enc
 function enc(n, delta)
   if n == 1 then
     if state.norns.keys.key1_down then
       if menu.active < 4 then
-        par.callbacks.set_seq_bpm_delta(menu.active, delta, state)
+        callbacks.set_seq_bpm_delta(menu.active, delta, state)
       else
-        par.callbacks.set_cv_bpm_delta(delta, state)
+        callbacks.set_cv_bpm_delta(delta, state)
       end
     else
       menu.active = util.clamp(menu.active + delta, 1, #menu.items)
     end
   elseif n == 2 and menu.active < 4 then
-    par.callbacks.set_seq_pulses_delta(menu.active, delta)
+    callbacks.set_seq_pulses_delta(menu.active, delta)
   elseif n == 3 and menu.active < 4  then
-    par.callbacks.set_seq_steps_delta(menu.active, delta)
+    callbacks.set_seq_steps_delta(menu.active, delta)
   end
   update_ui()
 end
@@ -167,15 +252,12 @@ end
 function init()
   -- crow init
   cr = cs:new(crow)
-  cr:set_trigger_output(1)
-  cr:set_trigger_output(2)
-  cr:set_trigger_output(3)
 
   CONFIG.SCALES = helpers.preprocess_scales(CONFIG.SCALES_MUSICUTIL)
 
   for i, seq_state in ipairs(state.seqs) do
     cr:set_trigger_output(i)
-    seq_state.sequence = helpers.er_gen(state.seqs[i].pulses, state.seqs[i].steps)
+    seq_state.sequence = er.gen(state.seqs[i].pulses, state.seqs[i].steps)
     seq_state.metro = metro.init{
       event = function() step(i) end,
       time = helpers.bpm_to_sec(state.seqs[i].bpm),
@@ -196,6 +278,6 @@ function init()
   state.cv.metro:start()
 
   menu.active = 1
-  par.add_params(par.callbacks, state)
+  par.add_params(callbacks, state)
   update_ui()
 end
