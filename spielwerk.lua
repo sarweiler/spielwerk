@@ -372,19 +372,25 @@ function init()
   -- arc init
   a = as:new(arc)
 
-  --for i=1, 4 do
-  a:set_delta_fn{
-    ring = 1,
-    fn = function(d)
-      callbacks.set_seq_bpm_delta(1, d)
-    end
-  }
-  --end
+  for i=1, 3 do
+    a:set_delta_fn{
+      ring = i,
+      fn = function(d)
+        if state.norns.keys.key2_down then
+          callbacks.set_seq_pulses_delta(i, d)
+        elseif state.norns.keys.key3_down then
+          callbacks.set_seq_steps_delta(i, d)
+        else
+          callbacks.set_seq_bpm_delta(i, d)
+        end
+      end
+    }
+  end
 
   a:set_delta_fn{
-    ring = 2,
+    ring = 4,
     fn = function(d)
-      callbacks.set_seq_bpm_delta(2, d)
+      callbacks.set_cv_bpm_delta(d)
     end
   }
 
