@@ -219,17 +219,19 @@ function key(n, pressed)
   end
 
   if state.norns.keys.key1_down and state.norns.keys.key2_down then
-    for i, seq in ipairs(state.seqs) do
-      seq.metro:stop()
+    if state.menu.active < 4 then
+      state.seqs[state.menu.active].metro:stop()
+    else
+      state.cv.metro:stop()
     end
-    state.cv.metro:stop()
   end
 
   if state.norns.keys.key1_down and state.norns.keys.key3_down then
-    for i, seq in ipairs(state.seqs) do
-      seq.metro:start()
+    if state.menu.active < 4 then
+      state.seqs[state.menu.active].metro:start()
+    else
+      state.cv.metro:start()
     end
-    state.cv.metro:start()
   end
 end
 
