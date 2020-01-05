@@ -14,10 +14,13 @@ local par = include("lib/src/norns/parameters")
 local cs = include("lib/src/crowservice")
 local helpers = include("lib/src/helpers")
 local tbw = include("lib/src/tablebitwise")
+local ah = include("lib/src/archelpers")
+
+local a = arc.connect()
 
 engine.name = "PolyPerc"
 
-local calc_cv_value, cr, step, step_cv, update_state, update_ui
+local calc_cv_value, cr, step, step_cv, update_arc, update_state, update_ui
 
 local CONFIG = {
   CV = {
@@ -240,9 +243,29 @@ calc_cv_value = function(cv_seq)
   return cv
 end
 
+
+-- arc
+a.delta = function(r, d)
+  print("delta " .. r .. ": " .. d)
+end
+
+update_arc = function()
+  for i, seq_state in ipairs(state.seqs) do
+    --print(#seq_state.sequence)
+    ah.display_sequence{
+      arc = a,
+      ring = i,
+      seq = seq_state.sequence
+    }
+  end
+  
+  a:refresh()
+end
+
 -- display UI
 update_ui = function()
   menu_items.update(menu)
+  update_arc()
   redraw()
 end
 
