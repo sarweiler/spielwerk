@@ -9,18 +9,15 @@
 
 local er = require("er")
 local mu = require("musicutil")
-local menu_items = include("lib/src/norns/menu_items")
 local par = include("lib/src/norns/parameters")
+local as = include("lib/src/arcservice")
 local cs = include("lib/src/crowservice")
 local helpers = include("lib/src/helpers")
 local tbw = include("lib/src/tablebitwise")
-local ah = include("lib/src/archelpers")
-
-local a = arc.connect()
 
 engine.name = "PolyPerc"
 
-local calc_cv_value, cr, step, step_cv, update_arc, update_state, update_ui
+local a, calc_cv_value, cr, step, step_cv, update_arc, update_state, update_ui
 
 local CONFIG = {
   CV = {
@@ -50,7 +47,8 @@ local state = {
   cv = {
     bpm = CONFIG.CV.INITBPM,
     metro = {},
-    scale = "major"
+    scale = "major",
+    value = 0
   },
   seqs = {
     {
@@ -87,6 +85,10 @@ local state = {
       key2_down = false,
       key3_down = false
     }
+  },
+  menu = {
+    active = 1,
+    items = 4
   }
 }
 
@@ -191,18 +193,18 @@ end
 function enc(n, delta)
   if n == 1 then
     if state.norns.keys.key1_down then
-      if menu.active < 4 then
-        callbacks.set_seq_bpm_delta(menu.active, delta, state)
+      if state.menu.active < 4 then
+        callbacks.set_seq_bpm_delta(state.menu.active, delta)
       else
         callbacks.set_cv_bpm_delta(delta, state)
       end
     else
-      menu.active = util.clamp(menu.active + delta, 1, #menu.items)
+      state.menu.active = util.clamp(state.menu.active + delta, 1, state.menu.items)
     end
-  elseif n == 2 and menu.active < 4 then
-    callbacks.set_seq_pulses_delta(menu.active, delta)
-  elseif n == 3 and menu.active < 4  then
-    callbacks.set_seq_steps_delta(menu.active, delta)
+  elseif n == 2 and state.menu.active < 4 then
+    callbacks.set_seq_pulses_delta(state.menu.active, delta)
+  elseif n == 3 and state.menu.active < 4  then
+    callbacks.set_seq_steps_delta(state.menu.active, delta)
   end
   update_ui()
 end
@@ -243,28 +245,25 @@ calc_cv_value = function(cv_seq)
   return cv
 end
 
-
--- arc
-a.delta = function(r, d)
-  print("delta " .. r .. ": " .. d)
-end
-
 update_arc = function()
   for i, seq_state in ipairs(state.seqs) do
-    --print(#seq_state.sequence)
-    ah.display_sequence{
-      arc = a,
+    a:display_sequence{
       ring = i,
-      seq = seq_state.sequence
+      seq = seq_state.sequence,
+      active = seq_state.active
     }
   end
+
+  a:display_cv{
+    ring = 4,
+    cv = state.cv.value
+  }
   
-  a:refresh()
+  a:redraw()
 end
 
 -- display UI
 update_ui = function()
-  menu_items.update(menu)
   update_arc()
   redraw()
 end
@@ -275,7 +274,7 @@ function redraw()
 
   for i, seq in ipairs(state.seqs) do
     screen.move(128, i * line_height - 8)
-    screen.level(menu.active == i and 15 or 4)
+    screen.level(state.menu.active == i and 15 or 4)
     local id_bpm = "seq" .. i .. "_bpm"
     local id_pulses = "seq" .. i .. "_pulses"
     local id_steps = "seq" .. i .. "_steps"
@@ -296,7 +295,7 @@ function redraw()
     end
   end
 
-  screen.level(menu.active == 4 and 15 or 4)
+  screen.level(state.menu.active == 4 and 15 or 4)
   screen.move(128, (#state.seqs + 1) * line_height - 4)
   screen.text_right("cv bpm: " .. params:get("cv_bpm"))
   
@@ -324,6 +323,7 @@ step_cv = function()
     state.seqs[3].sequence_shifted
   )
   local cv_and = calc_cv_value(cv_seq_and)
+  state.cv.value = cv_and
   cr:set_cv(4, cv_and)
 
   if params:get("jf_output") == 1 then
@@ -369,6 +369,25 @@ function init()
   -- crow init
   cr = cs:new(crow)
 
+  -- arc init
+  a = as:new(arc)
+
+  --for i=1, 4 do
+  a:set_delta_fn{
+    ring = 1,
+    fn = function(d)
+      callbacks.set_seq_bpm_delta(1, d)
+    end
+  }
+  --end
+
+  a:set_delta_fn{
+    ring = 2,
+    fn = function(d)
+      callbacks.set_seq_bpm_delta(2, d)
+    end
+  }
+
   CONFIG.SCALES = helpers.preprocess_scales(CONFIG.SCALES_MUSICUTIL)
 
   for i, seq_state in ipairs(state.seqs) do
@@ -394,7 +413,7 @@ function init()
 
   state.cv.metro:start()
 
-  menu.active = 1
+  state.menu.active = 1
   par.add_params(callbacks, state)
   update_ui()
 end
