@@ -2,7 +2,7 @@
 
 spielwerk is a sequencer for monome norns + crow (arc optional) providing three independent euclidean rhythms and a CV, that is derived from these rhythms.
 
-_it's a work in progress, so handle with care._
+_it's a work in progress, so handle with care. there will be a thread in the lines library category when it has reached a releasable state._
 
 ## norns
 
