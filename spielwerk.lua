@@ -14,84 +14,37 @@ local as = include("lib/src/arcservice")
 local cs = include("lib/src/crowservice")
 local helpers = include("lib/src/helpers")
 local tbw = include("lib/src/tablebitwise")
+local state = include("lib/src/state")
+
 local CONFIG = include("lib/src/config")
 
 engine.name = "PolyPerc"
 
-local a, calc_cv_value, cr, step, step_cv, update_arc, update_state, update_ui
-
-local state = {
-  cv = {
-    bpm = CONFIG.CV.INITBPM,
-    metro = {},
-    scale = "major",
-    value = 0
-  },
-  seqs = {
-    {
-      steps = CONFIG.SEQ.INITSTEPS,
-      pulses = CONFIG.SEQ.INITPULSES,
-      sequence = {},
-      sequence_shifted = {},
-      active = 1,
-      bpm = CONFIG.SEQ.INITBPM,
-      metro = {}
-    },
-    {
-      steps = CONFIG.SEQ.INITSTEPS,
-      pulses = CONFIG.SEQ.INITPULSES,
-      sequence = {},
-      sequence_shifted = {},
-      active = 1,
-      bpm = CONFIG.SEQ.INITBPM,
-      metro = {}
-    },
-    {
-      steps = CONFIG.SEQ.INITSTEPS,
-      pulses = CONFIG.SEQ.INITPULSES,
-      sequence = {},
-      sequence_shifted = {},
-      active = 1,
-      bpm = CONFIG.SEQ.INITBPM,
-      metro = {}
-    }
-  },
-  norns = {
-    keys = {
-      key1_down = false,
-      key2_down = false,
-      key3_down = false
-    }
-  },
-  menu = {
-    active = 1,
-    items = 4
-  }
-}
+local a, calc_cv_value, cr, step, step_cv, update_arc, update_ui
 
 local menu = {}
 
 local callbacks = {
   set_cv_bpm = function(new_value)
     params:set("cv_bpm", new_value)
-    update_state()
+    state.update()
   end,
   set_cv_bpm_delta = function(delta)
     local current_value = params:get("cv_bpm")
     params:set("cv_bpm", current_value + delta)
-    update_state()
+    state.update()
   end,
   set_seq_bpm = function(i, new_value)
     local id = "seq" .. i .. "_bpm"
     params:set(id, new_value)
-    update_state()
+    state.update()
   end,
   set_seq_bpm_delta = function(i, delta)
     local id = "seq" .. i .. "_bpm"
     local current_value = params:get(id)
     local new_value = current_value + delta
     params:set(id, new_value)
-    update_state()
+    state.update()
   end,
   set_seq_pulses = function(i, new_value)
     local id = "seq" .. i .. "_pulses"
@@ -100,7 +53,7 @@ local callbacks = {
       new_value = steps
     end
     params:set(id, new_value)
-    update_state()
+    state.update()
   end,
   set_seq_pulses_delta = function(i, delta)
     local id = "seq" .. i .. "_pulses"
@@ -111,7 +64,7 @@ local callbacks = {
       new_value = steps
     end
     params:set(id, new_value)
-    update_state()
+    state.update()
   end,
   set_seq_steps = function(i, new_value)
     local id = "seq" .. i .. "_steps"
@@ -120,7 +73,7 @@ local callbacks = {
       new_value = pulses
     end
     params:set(id, new_value)
-    update_state()
+    state.update()
   end,
   set_seq_steps_delta = function(i, delta)
     local id = "seq" .. i .. "_steps"
@@ -131,7 +84,7 @@ local callbacks = {
       new_value = pulses
     end
     params:set(id, new_value)
-    update_state()
+    state.update()
   end,
   set_jf_output = function(v)
     if v==1 then
@@ -144,26 +97,9 @@ local callbacks = {
   end,
   set_cutoff = function()
     engine.cutoff(params:get("cutoff"))
-    update_state()
+    state.update()
   end
 }
-
--- state
-update_state = function()
-  for i, seq_state in ipairs(state.seqs) do
-    local id_bpm = "seq" .. i .. "_bpm"
-    local id_pulses = "seq" .. i .. "_pulses"
-    local id_steps = "seq" .. i .. "_steps"
-    state.seqs[i].metro.time = helpers.bpm_to_sec(params:get(id_bpm))
-    state.seqs[i].bpm = params:get(id_bpm)
-    state.seqs[i].pulses = params:get(id_pulses)
-    state.seqs[i].steps = params:get(id_steps)
-    state.seqs[i].sequence = er.gen(state.seqs[i].pulses, state.seqs[i].steps)
-  end
-
-  state.cv.bpm = params:get("cv_bpm")
-  state.cv.metro.time = helpers.bpm_to_sec(params:get("cv_bpm"))
-end
 
 
 -- enc
