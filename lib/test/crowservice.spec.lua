@@ -37,7 +37,7 @@ describe("CrowService", function()
 
   it("should set an output as trigger", function()
     local c = cs:new(crow_stub)
-    local trigger_action = "{to(5,0), to(0, 0.1)}"
+    local trigger_action = "{to(5,0), to(0, 0.25)}"
 
     c:set_trigger_output(2)
     assert.are.equal(crow_stub.output[2].action, trigger_action)
