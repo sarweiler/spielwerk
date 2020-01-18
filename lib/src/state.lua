@@ -3,22 +3,20 @@ local CONFIG = include("lib/src/config")
 local helpers = include("lib/src/helpers")
 
 local state = {
-  cv = {
-    bpm = CONFIG.CV.INITBPM,
-    metro = {},
-    scale = "major",
-    value = 0
+  scale = "major",
+  cv_seqs = {
+    {
+      bpm = CONFIG.CV.INITBPM,
+      metro = {},
+      value = 0
+    },
+    {
+      bpm = CONFIG.CV.INITBPM,
+      metro = {},
+      value = 0
+    },
   },
   seqs = {
-    {
-      steps = CONFIG.SEQ.INITSTEPS,
-      pulses = CONFIG.SEQ.INITPULSES,
-      sequence = {},
-      sequence_shifted = {},
-      active = 1,
-      bpm = CONFIG.SEQ.INITBPM,
-      metro = {}
-    },
     {
       steps = CONFIG.SEQ.INITSTEPS,
       pulses = CONFIG.SEQ.INITPULSES,
@@ -63,8 +61,10 @@ state.update = function()
     state.seqs[i].sequence = er.gen(state.seqs[i].pulses, state.seqs[i].steps)
   end
 
-  state.cv.bpm = params:get("cv_bpm")
-  state.cv.metro.time = helpers.bpm_to_sec(params:get("cv_bpm"))
+  for i, cv_seq_state in ipairs(state.cv_seqs) do
+    state.cv_seqs[i].bpm = params:get("cv_" .. i .. "_bpm")
+    state.cv_seqs[i].metro.time = helpers.bpm_to_sec(params:get("cv_" .. i .. "_bpm"))
+  end
 end
 
 return state

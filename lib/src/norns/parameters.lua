@@ -1,12 +1,14 @@
 local parameters = {
   add_params = function(param_callbacks, state)
-    local cs_bpm_cv = controlspec.new(1, 300, 'lin', 1, state.cv.bpm, 'bpm')
-    params:add{
-      type="control",
-      id="cv_bpm",
-      controlspec=cs_bpm_cv,
-      action=param_callbacks.set_cv_bpm
-    }
+    for i, cv_seq_state in ipairs(state.cv_seqs) do
+      local cs_bpm_cv = controlspec.new(1, 300, 'lin', 1, cv_seq_state.bpm, 'bpm')
+      params:add{
+        type="control",
+        id="cv" .. i .. "_bpm",
+        controlspec=cs_bpm_cv,
+        action=function(v) param_callbacks.set_cv_bpm(i, v) end
+      }
+    end
 
     for i, seq_state in ipairs(state.seqs) do
       local id_bpm = "seq" .. i .. "_bpm"
@@ -72,7 +74,7 @@ local parameters = {
     params:add_option(
       "jf_note_mode",
       "jf note mode",
-      {"and/and", "or/and", "and/or", "or/or"},
+      {"and", "or"},
       2
     )
   end

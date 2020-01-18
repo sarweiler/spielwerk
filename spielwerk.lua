@@ -20,18 +20,18 @@ local CONFIG = include("lib/src/config")
 
 engine.name = "PolyPerc"
 
-local a, calc_cv_value, cr, step, step_cv, update_arc, update_ui
+local a, calc_cv_value, cr, step, step_cv, update_ui
 
 local menu = {}
 
 local callbacks = {
-  set_cv_bpm = function(new_value)
-    params:set("cv_bpm", new_value)
+  set_cv_bpm = function(i, new_value)
+    params:set("cv" .. i .. "_bpm", new_value)
     state.update()
   end,
-  set_cv_bpm_delta = function(delta)
-    local current_value = params:get("cv_bpm")
-    params:set("cv_bpm", current_value + delta)
+  set_cv_bpm_delta = function(i, delta)
+    local current_value = params:get("cv" .. i .. "_bpm")
+    params:set("cv" .. i .. "_bpm", current_value + delta)
     state.update()
   end,
   set_seq_bpm = function(i, new_value)
@@ -106,17 +106,17 @@ local callbacks = {
 function enc(n, delta)
   if n == 1 then
     if state.norns.keys.key1_down then
-      if state.menu.active < 4 then
+      if state.menu.active < 3 then
         callbacks.set_seq_bpm_delta(state.menu.active, delta)
       else
-        callbacks.set_cv_bpm_delta(delta, state)
+        callbacks.set_cv_bpm_delta(state.menu.active - 2, delta)
       end
     else
       state.menu.active = util.clamp(state.menu.active + delta, 1, state.menu.items)
     end
-  elseif n == 2 and state.menu.active < 4 then
+  elseif n == 2 and state.menu.active < 3 then
     callbacks.set_seq_pulses_delta(state.menu.active, delta)
-  elseif n == 3 and state.menu.active < 4  then
+  elseif n == 3 and state.menu.active < 3  then
     callbacks.set_seq_steps_delta(state.menu.active, delta)
   end
   update_ui()
@@ -132,18 +132,18 @@ function key(n, pressed)
   end
 
   if state.norns.keys.key1_down and state.norns.keys.key2_down then
-    if state.menu.active < 4 then
+    if state.menu.active < 3 then
       state.seqs[state.menu.active].metro:stop()
     else
-      state.cv.metro:stop()
+      state.cv_seqs[state.menu.active - 2].metro:stop()
     end
   end
 
   if state.norns.keys.key1_down and state.norns.keys.key3_down then
-    if state.menu.active < 4 then
+    if state.menu.active < 3 then
       state.seqs[state.menu.active].metro:start()
     else
-      state.cv.metro:start()
+      state.cv_seqs[state.menu.active - 2].metro:start()
     end
   end
 end
@@ -151,7 +151,7 @@ end
 
 calc_cv_value = function(cv_seq)
   local bit_note_value = math.floor(tbw.to_int(cv_seq) / 10000)
-  local note_quantized = helpers.quantize(CONFIG.SCALES[state.cv.scale], bit_note_value)
+  local note_quantized = helpers.quantize(CONFIG.SCALES[state.scale], bit_note_value)
   local octave_range = math.random(params:get("octave_range"))
   local cv = helpers.note_to_volt(
     (params:get("octave") * 12) + (octave_range * 12) + note_quantized
@@ -160,26 +160,10 @@ calc_cv_value = function(cv_seq)
   return cv
 end
 
-update_arc = function()
-  for i, seq_state in ipairs(state.seqs) do
-    a:display_sequence{
-      ring = i,
-      seq = seq_state.sequence,
-      active = seq_state.active
-    }
-  end
-
-  a:display_cv{
-    ring = 4,
-    cv = state.cv.value
-  }
-  
-  a:redraw()
-end
 
 -- display UI
 update_ui = function()
-  update_arc()
+  a:redraw()
   redraw()
 end
 
@@ -210,9 +194,11 @@ function redraw()
     end
   end
 
-  screen.level(state.menu.active == 4 and 15 or 4)
-  screen.move(128, (#state.seqs + 1) * line_height - 4)
-  screen.text_right("cv bpm: " .. params:get("cv_bpm"))
+  for i, seq in ipairs(state.cv_seqs) do
+    screen.level(state.menu.active == (i + 2) and 15 or 4)
+    screen.move(128, (#state.seqs + i) * line_height - 4)
+    screen.text_right("cv" .. i .. " bpm: " .. params:get("cv" .. i .. "_bpm"))
+  end
   
   screen.update()
 end
@@ -226,56 +212,55 @@ step = function(c)
   end
   state.seqs[c].active = (state.seqs[c].active < state.seqs[c].steps) and state.seqs[c].active + 1 or 1
   state.seqs[c].sequence_shifted = helpers.tab.shift_left(state.seqs[c].sequence_shifted)
+
+  a:display_sequence{
+    ring = c + 1,
+    seq = state.seqs[c].sequence,
+    active = state.seqs[c].active
+  }
+
   update_ui()
 end
 
-step_cv = function()
+step_cv = function(i)
   local cv_seq_and = tbw.tand(
-    tbw.tand(
       state.seqs[1].sequence_shifted,
       state.seqs[2].sequence_shifted
-    ),
-    state.seqs[3].sequence_shifted
   )
+  
   local cv_and = calc_cv_value(cv_seq_and)
-  state.cv.value = cv_and
-  cr:set_cv(4, cv_and)
+
+  local cv_seq_or = tbw.tor(
+      state.seqs[1].sequence_shifted,
+      state.seqs[2].sequence_shifted
+  )
+  local cv_or = calc_cv_value(cv_seq_or)
+  
+  if i == 1 then
+    state.cv_seqs[1].value = cv_or
+    cr:set_cv(1, cv_or)
+    a:display_cv{
+      ring = 1,
+      cv = state.cv_seqs[1].value
+    }
+  else
+    state.cv_seqs[2].value = cv_and
+    cr:set_cv(4, cv_and)
+    a:display_cv{
+      ring = 4,
+      cv = state.cv_seqs[2].value
+    }
+  end
 
   if params:get("jf_output") == 1 then
     if params:get("jf_note_mode") == 1 then
       crow.ii.jf.play_note(cv_and + CONFIG.JF.OCTAVE_OFFSET, 4.0)
     elseif params:get("jf_note_mode") == 2 then
-      local cv_seq_or_and = tbw.tand(
-        tbw.tor(
-          state.seqs[1].sequence_shifted,
-          state.seqs[2].sequence_shifted
-        ),
-        state.seqs[3].sequence_shifted
-      )
-      local cv_or_and = calc_cv_value(cv_seq_or_and)
-      crow.ii.jf.play_note(cv_or_and + CONFIG.JF.OCTAVE_OFFSET, 4.0)
-      elseif params:get("jf_note_mode") == 3 then
-        local cv_seq_and_or = tbw.tor(
-          tbw.tand(
-            state.seqs[1].sequence_shifted,
-            state.seqs[2].sequence_shifted
-          ),
-          state.seqs[3].sequence_shifted
-        )
-        local cv_and_or = calc_cv_value(cv_seq_and_or)
-        crow.ii.jf.play_note(cv_and_or + CONFIG.JF.OCTAVE_OFFSET, 4.0)
-    elseif params:get("jf_note_mode") == 4 then
-      local cv_seq_or_or = tbw.tor(
-        tbw.tor(
-          state.seqs[1].sequence_shifted,
-          state.seqs[2].sequence_shifted
-        ),
-        state.seqs[3].sequence_shifted
-      )
-      local cv_or_or = calc_cv_value(cv_seq_or_or)
-      crow.ii.jf.play_note(cv_or_or + CONFIG.JF.OCTAVE_OFFSET, 4.0)
+      crow.ii.jf.play_note(cv_or + CONFIG.JF.OCTAVE_OFFSET, 4.0)
     end
   end
+
+  update_ui()
 end
 
 
@@ -287,9 +272,16 @@ function init()
   -- arc init
   a = as:new(arc)
 
-  for i=1, 3 do
+  a:set_delta_fn{
+    ring = 1,
+    fn = function(d)
+      callbacks.set_cv_bpm_delta(1, d)
+    end
+  }
+
+  for i, seq_state in ipairs(state.seqs) do
     a:set_delta_fn{
-      ring = i,
+      ring = i + 1,
       fn = function(d)
         if state.norns.keys.key2_down then
           callbacks.set_seq_pulses_delta(i, d)
@@ -305,7 +297,7 @@ function init()
   a:set_delta_fn{
     ring = 4,
     fn = function(d)
-      callbacks.set_cv_bpm_delta(d)
+      callbacks.set_cv_bpm_delta(2, d)
     end
   }
 
@@ -322,17 +314,21 @@ function init()
     }
   end
 
-  state.cv.metro = metro.init{
-    event = step_cv,
-    time = helpers.bpm_to_sec(state.cv.bpm),
-    count = CONFIG.CV.STEPCOUNT
-  }
+  for i, seq_state in ipairs(state.cv_seqs) do
+    state.cv_seqs[i].metro = metro.init{
+      event = function() step_cv(i) end,
+      time = helpers.bpm_to_sec(state.cv_seqs[i].bpm),
+      count = CONFIG.CV.STEPCOUNT
+    }
+  end
 
   for i=1,#state.seqs do
     state.seqs[i].metro:start()
   end
 
-  state.cv.metro:start()
+  for i=1,#state.cv_seqs do
+    state.cv_seqs[i].metro:start()
+  end
 
   state.menu.active = 1
   par.add_params(callbacks, state)
