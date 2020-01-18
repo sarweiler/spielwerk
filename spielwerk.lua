@@ -9,7 +9,7 @@
 
 local er = require("er")
 local mu = require("musicutil")
-local par = include("lib/src/norns/parameters")
+local par = include("lib/src/parameters")
 local as = include("lib/src/arcservice")
 local cs = include("lib/src/crowservice")
 local helpers = include("lib/src/helpers")
