@@ -1,5 +1,5 @@
--- spielwerk: 3 rhythms, 1 cv
--- 1.0.0 @sbaio
+-- spielwerk: 2 rhythms, 2 cvs
+-- 0.9.0 @sbaio
 -- http://llllllll.co/
 --
 -- ENC 1: select menu item
