@@ -208,7 +208,7 @@ end
 step = function(c)
   local active_step = state.seqs[c].active
   if state.seqs[c].sequence[active_step] == true then
-    cr:fire_trigger(c)
+    cr:fire_trigger(c + 1)
   end
   state.seqs[c].active = (state.seqs[c].active < state.seqs[c].steps) and state.seqs[c].active + 1 or 1
   state.seqs[c].sequence_shifted = helpers.tab.shift_left(state.seqs[c].sequence_shifted)
@@ -303,8 +303,10 @@ function init()
 
   CONFIG.SCALES = helpers.preprocess_scales(CONFIG.SCALES_MUSICUTIL)
 
+  cr:set_trigger_output(2)
+  cr:set_trigger_output(3)
+
   for i, seq_state in ipairs(state.seqs) do
-    cr:set_trigger_output(i)
     seq_state.sequence = er.gen(state.seqs[i].pulses, state.seqs[i].steps)
     seq_state.sequence_shifted = seq_state.sequence
     seq_state.metro = metro.init{

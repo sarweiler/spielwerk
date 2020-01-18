@@ -62,8 +62,8 @@ state.update = function()
   end
 
   for i, cv_seq_state in ipairs(state.cv_seqs) do
-    state.cv_seqs[i].bpm = params:get("cv_" .. i .. "_bpm")
-    state.cv_seqs[i].metro.time = helpers.bpm_to_sec(params:get("cv_" .. i .. "_bpm"))
+    state.cv_seqs[i].bpm = params:get("cv" .. i .. "_bpm")
+    state.cv_seqs[i].metro.time = helpers.bpm_to_sec(params:get("cv" .. i .. "_bpm"))
   end
 end
 
